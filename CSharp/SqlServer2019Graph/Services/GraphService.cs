@@ -4,6 +4,7 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using Newtonsoft.Json;
 using SqlServer2019Graph.Model;
 
@@ -22,7 +23,9 @@ namespace SqlServer2019Graph.Services
         {
             var json = GetSchemaAsJsonString(schemaName);
 
-            return JsonConvert.DeserializeObject<Graph>(json);
+            return JsonConvert
+                .DeserializeObject<Graph[]>(json)
+                .FirstOrDefault();
         }
 
         private string GetSchemaAsJsonString(string schemaName)

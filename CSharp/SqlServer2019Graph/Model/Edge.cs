@@ -11,6 +11,9 @@ namespace SqlServer2019Graph.Model
         [JsonProperty("edge_table_name")]
         public string Name { get; set; }
 
+        [JsonProperty("edge_table_id")]
+        public int Id { get; set; }
+
         [JsonProperty("from_node_table_id")]
         public int From { get; set; }
 

@@ -304,7 +304,10 @@ BEGIN
 
 	DECLARE @NodesSchemaId int = (select schema_id from sys.schemas where [Name] = @NodesSchemaName);
 
-	RETURN (SELECT nodes = (SELECT [node].[name] as node_name, 
+	RETURN (
+				SELECT 
+					[name] = @NodesSchemaName,
+					nodes = (SELECT [node].[name] as node_name, 
 	                               [node].[object_id] as node_id, 
 								   [attributes] = (SELECT [column].[name] as name, [column].[is_nullable] as is_nullable
 				                 FROM sys.columns as [column]
@@ -319,9 +322,7 @@ BEGIN
 					               OBJECT_NAME(ECC.from_object_id) AS from_node_table_name, 
 					               ECC.from_object_id AS from_node_table_id,
 								   OBJECT_NAME(ECC.to_object_id) AS to_node_table_name, 
-								   ECC.to_object_id AS to_node_table_id, 
-								   is_disabled, 
-								   is_not_trusted,
+								   ECC.to_object_id AS to_node_table_id,
 								   [attributes] = (SELECT [column].[name] as name, [column].[is_nullable] as is_nullable
 													FROM sys.columns as [column]
 													WHERE [column].[graph_type] is null and  EC.parent_object_id = [column].[object_id]

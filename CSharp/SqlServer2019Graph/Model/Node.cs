@@ -8,10 +8,10 @@ namespace SqlServer2019Graph.Model
 {
     public class Node
     {
-        [JsonProperty("node_name")]
-        public string Id { get; set; }
+        [JsonProperty("node_id")]
+        public int Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonProperty("node_name")]
         public string Name { get; set; }
 
         [JsonProperty("attributes")]

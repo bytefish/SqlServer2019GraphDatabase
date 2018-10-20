@@ -8,6 +8,9 @@ namespace SqlServer2019Graph.Model
 {
     public class Graph
     {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
         [JsonProperty("nodes")]
         public IList<Node> Nodes { get; set; }
 
