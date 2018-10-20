@@ -31,7 +31,14 @@
                 console.log(data);
 
                 // Now display the graph using vis.js:
-                var options = {};
+                var options = {
+                    edges: {
+                        arrows: {
+                            to: { enabled: true },
+                            from: { enabled: false }
+                        }
+                    }
+                };
 
                 var container = document.getElementById('mynetwork');
                 

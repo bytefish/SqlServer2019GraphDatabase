@@ -170,7 +170,7 @@ BEGIN
 
     CREATE TABLE [Edges].[InCountry]
 	(
-		CONSTRAINT EC_IN_COUNTRY CONNECTION ([Nodes].[Airport] TO [Nodes].[State])
+		CONSTRAINT EC_IN_COUNTRY CONNECTION ([Nodes].[Airport] TO [Nodes].[Country])
 	) AS EDGE;
 
 END
