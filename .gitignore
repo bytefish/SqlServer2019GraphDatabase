@@ -1,0 +1,5 @@
+*.coverage
+bin
+obj
+*.csproj.user
+.vs
