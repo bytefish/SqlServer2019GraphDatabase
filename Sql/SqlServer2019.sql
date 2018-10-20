@@ -321,11 +321,14 @@ BEGIN
 								   OBJECT_NAME(ECC.to_object_id) AS to_node_table_name, 
 								   ECC.to_object_id AS to_node_table_id, 
 								   is_disabled, 
-								   is_not_trusted
+								   is_not_trusted,
+								   [attributes] = (SELECT [column].[name] as name, [column].[is_nullable] as is_nullable
+													FROM sys.columns as [column]
+													WHERE [column].[graph_type] is null and  EC.parent_object_id = [column].[object_id]
+													FOR JSON PATH)
 							FROM sys.edge_constraints EC
 							    INNER JOIN sys.edge_constraint_clauses ECC ON EC.object_id = ECC.object_id
 							FOR JSON PATH)
-							
 			FOR JSON PATH)
 
 END
