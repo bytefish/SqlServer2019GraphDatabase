@@ -1,6 +1,10 @@
 # SQL Server 2019 Graph Database Example #
 
-This is a sample for displaying a Graph in SQL Server 2019 CTP 2.0 using [Graph Edge Constraints] and [vis.js]:
+This is the repository for the article **Visualizing Graphs with Edge Constraints of the SQL Server 2019 Graph Database (SQL Server 2019 CTP 2.0)** at:
+
+* [https://bytefish.de/blog/sql_server_2019_graph_database/](https://bytefish.de/blog/sql_server_2019_graph_database/)
+
+It is a sample for displaying a Graph using SQL Server 2019 [Graph Edge Constraints] and [vis.js]:
 
 <div style="display:flex; align-items:center; justify-content:center;">
     <img style="width: 50%;" src="https://github.com/bytefish/SqlServer2019GraphDatabase/raw/master/Screenshots/Graph.jpg">
