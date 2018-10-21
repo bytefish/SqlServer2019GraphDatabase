@@ -25,8 +25,10 @@
     
     fetch('api/graph/schema')
         .then((response) => {
+            // Now process the JSON:
             response.json().then((data) => {
-                // If you want to Debug the Data:
+
+                // Log the data :
                 console.log(data);
 
                 // Now display the graph using vis.js:
@@ -47,4 +49,5 @@
         .catch((err) => {
             alert("Fetching Graph Schema Failed: " + err);
         });
+
 </script>

@@ -4,7 +4,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SqlServer2019Graph.Controllers.Converter;
 using SqlServer2019Graph.Controllers.DTO;
-using SqlServer2019Graph.Model;
 using SqlServer2019Graph.Services;
 
 namespace SqlServer2019Graph.Controllers
