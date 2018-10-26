@@ -1,0 +1,71 @@
+﻿@page
+@model QueryModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<style>
+    body {
+        color: #d3d3d3;
+        font: 12pt arial;
+        background-color: #ffffff;
+    }
+
+    #mynetwork {
+        width: 800px;
+        height: 800px;
+        background-color: #fff;
+    }
+</style>
+
+<div id="mynetwork"></div>
+
+<script type="text/javascript">
+
+    postData("api/graph/query", { sql: "" })
+        .then(data => {
+            console.log(JSON.stringify(data));
+        })
+        .catch(error => console.error(error));
+
+    function postData(url = ``, data = {}) {
+        return fetch(url, {
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                response.json();
+            });
+    }
+
+    fetch('api/graph/schema')
+        .then((response) => {
+            // Now process the JSON:
+            response.json().then((data) => {
+
+                // Log the data :
+                console.log(data);
+
+                // Now display the graph using vis.js:
+                var options = {
+                    edges: {
+                        arrows: {
+                            to: { enabled: true },
+                            from: { enabled: false }
+                        }
+                    }
+                };
+
+                var container = document.getElementById('mynetwork');
+                
+                new vis.Network(container, data, options);
+            });
+        })
+        .catch((err) => {
+            alert("Fetching Graph Schema Failed: " + err);
+        });
+
+</script>

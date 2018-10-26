@@ -335,5 +335,277 @@ BEGIN
 END
 GO
 
-SELECT [Functions].[GetGraphSchema]('Nodes')
+-- Stored Procedures:
 
+IF OBJECT_ID(N'[Functions].[InsertAirports]', N'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE [Functions].[InsertAirports]
+END
+GO 
+
+IF EXISTS (SELECT * FROM sys.types WHERE is_table_type = 1 AND name = 'AirportType')
+BEGIN
+    DROP TYPE [Functions].[AirportType]
+END
+
+CREATE TYPE [Functions].[AirportType] AS TABLE (
+    [Identifier] [NVARCHAR](255),
+    [Abbr] [NVARCHAR](255),
+    [Name] [NVARCHAR](255),
+    [City] [NVARCHAR](255),
+	[StateCode] [NVARCHAR](255),
+    [StateName] [NVARCHAR](255),
+    [Country] [NVARCHAR](255),
+	[CountryIsoCode] [NVARCHAR](255)
+);
+
+GO
+
+CREATE PROCEDURE [Functions].[InsertAirports]
+  @Entities [Functions].[AirportType] ReadOnly
+AS
+BEGIN
+    
+    SET NOCOUNT ON;
+
+    -- Insert missing City Nodes:
+    INSERT INTO [Nodes].[City]
+    SELECT DISTINCT e.City
+    FROM @Entities e 
+	WHERE NOT EXISTS (select * from [Nodes].[City] c where c.Name = e.City)
+
+    -- Insert missing State Nodes:
+    INSERT INTO [Nodes].[State]
+    SELECT DISTINCT e.StateCode, e.StateName
+    FROM @Entities e 
+	WHERE NOT EXISTS (select * from [Nodes].[State] s where s.Name = e.StateName and s.Code = e.StateCode)
+
+    -- Insert missing Country Nodes:
+    INSERT INTO [Nodes].[Country]
+    SELECT DISTINCT e.Country, e.CountryIsoCode
+    FROM @Entities e 
+	WHERE NOT EXISTS (select * from [Nodes].[Country] c where c.Name = e.Country)
+    
+    -- Build the Temporary Staged Table for Inserts:
+    DECLARE @TemporaryAirportTable Table(
+        [AirportID] [INTEGER],
+		[NodeID] [NVARCHAR](1000),
+        [Airport] [NVARCHAR](255),
+        [Abbr] [NVARCHAR](255),
+        [Name] [NVARCHAR](255),
+        [City] [NVARCHAR](255),
+        [StateCode] [NVARCHAR](255),
+		[StateName] [NVARCHAR](255),
+        [Country] [NVARCHAR](255),
+		[CountryIsoCode] [NVARCHAR](255)
+    );
+    
+    -- Insert into Temporary Table:
+    INSERT INTO [Nodes].[Airport](Identifier, Abbr, Name, City, StateCode, StateName, Country, CountryIsoCode)
+    OUTPUT INSERTED.AirportID, INSERTED.$NODE_ID, INSERTED.Identifier, INSERTED.Abbr, INSERTED.Name, INSERTED.City, INSERTED.StateCode, INSERTED.StateName, INSERTED.Country, INSERTED.CountryIsoCode
+    INTO @TemporaryAirportTable
+    SELECT * FROM @Entities;
+    
+    -- Build Relationships:
+    INSERT INTO [Edges].[InCity]
+    SELECT airport.NodeID, (SELECT $NODE_ID FROM [Nodes].[City] where Name = airport.City)
+    FROM @TemporaryAirportTable airport;
+
+    INSERT INTO [Edges].[InState]
+    SELECT airport.NodeID, (SELECT $NODE_ID FROM [Nodes].[State] where Code = airport.StateCode)
+    FROM @TemporaryAirportTable airport;
+
+    INSERT INTO [Edges].[InCountry]
+    SELECT airport.NodeID, (SELECT $NODE_ID FROM [Nodes].[Country] where Name = airport.Country)
+    FROM @TemporaryAirportTable airport;
+    
+END
+GO
+
+IF OBJECT_ID(N'[Functions].[InsertFlights]', N'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE [Functions].[InsertFlights]
+END
+GO 
+
+IF EXISTS (SELECT * FROM sys.types WHERE is_table_type = 1 AND name = 'FlightType')
+BEGIN
+    DROP TYPE [Functions].[FlightType]
+END
+
+CREATE TYPE [Functions].[FlightType] AS TABLE (
+    [Year] [NUMERIC](9, 0),
+    [Month] [NUMERIC](9, 0),
+    [DayOfMonth] [NUMERIC](9, 0),
+    [DayOfWeek] [NUMERIC](9, 0),
+    [FlightDate] [DATETIME2],
+    [UniqueCarrier] [NVARCHAR](255),
+    [TailNumber] [NVARCHAR](255),
+    [FlightNumber] [NVARCHAR](255),
+    [OriginAirport] [NVARCHAR](55),
+    [OriginState] [NVARCHAR](55),
+    [DestinationAirport] [NVARCHAR](55),
+    [DestinationState] [NVARCHAR](55),
+    [DepartureDelay] [NUMERIC](9, 0),
+    [TaxiOut] [NUMERIC](9, 0),
+    [TaxiIn] [NUMERIC](9, 0),
+    [ArrivalDelay] [NUMERIC](9, 0),
+    [CancellationCode] [NVARCHAR](255),
+    [CarrierDelay] [NUMERIC](9, 0),
+    [WeatherDelay] [NUMERIC](9, 0),
+    [NasDelay] [NUMERIC](9, 0),
+    [SecurityDelay] [NUMERIC](9, 0),
+    [LateAircraftDelay] [NUMERIC](9, 0)
+);
+
+GO
+
+IF OBJECT_ID(N'[Functions].[InsertFlights]', N'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE [Functions].[InsertFlights]
+END
+GO 
+
+CREATE PROCEDURE [Functions].[InsertFlights]
+  @Entities [Functions].[FlightType] ReadOnly
+AS
+BEGIN
+    
+    SET NOCOUNT ON;
+
+    -- Temporary Table for Inserts:
+    DECLARE @TemporaryFlightTable TABLE(
+        [FlightID] [INTEGER],
+        [NodeID] [NVARCHAR](1000),
+        [Year] [NUMERIC](9, 0),
+        [Month] [NUMERIC](9, 0),
+        [DayOfMonth] [NUMERIC](9, 0),
+        [DayOfWeek] [NUMERIC](9, 0),
+        [FlightDate] [DATETIME2],
+        [UniqueCarrier] [NVARCHAR](255),
+        [TailNumber] [NVARCHAR](255),
+        [FlightNumber] [NVARCHAR](255),
+        [OriginAirport] [NVARCHAR](55),
+        [OriginState] [NVARCHAR](55),
+        [DestinationAirport] [NVARCHAR](55),
+        [DestinationState] [NVARCHAR](55),
+        [DepartureDelay] [NUMERIC](9, 0),
+        [TaxiOut] [NUMERIC](9, 0),
+        [TaxiIn] [NUMERIC](9, 0),
+        [ArrivalDelay] [NUMERIC](9, 0),
+        [CancellationCode] [NVARCHAR](255),
+        [CarrierDelay] [NUMERIC](9, 0),
+        [WeatherDelay] [NUMERIC](9, 0),
+        [NasDelay] [NUMERIC](9, 0),
+        [SecurityDelay] [NUMERIC](9, 0),
+        [LateAircraftDelay] [NUMERIC](9, 0)
+    );
+
+    -- Insert into Temporary Table:
+    INSERT INTO [Nodes].Flight(Year, Month, DayOfMonth, DayOfWeek, FlightDate, UniqueCarrier, TailNumber, FlightNumber, OriginAirport, OriginState, DestinationAirport, DestinationState, DepartureDelay, TaxiOut, TaxiIn, ArrivalDelay, CancellationCode, CarrierDelay, WeatherDelay, NasDelay, SecurityDelay, LateAircraftDelay)
+    OUTPUT INSERTED.FlightID, INSERTED.$NODE_ID, INSERTED.Year, INSERTED.Month, INSERTED.DayOfMonth, INSERTED.DayOfWeek, INSERTED.FlightDate, INSERTED.UniqueCarrier, INSERTED.TailNumber, INSERTED.FlightNumber, INSERTED.OriginAirport, INSERTED.OriginState, INSERTED.DestinationAirport, INSERTED.DestinationState, INSERTED.DepartureDelay, INSERTED.TaxiOut, INSERTED.TaxiIn, INSERTED.ArrivalDelay, INSERTED.CancellationCode, INSERTED.CarrierDelay, INSERTED.WeatherDelay, INSERTED.NasDelay, INSERTED.SecurityDelay, INSERTED.LateAircraftDelay
+    INTO @TemporaryFlightTable
+    SELECT * FROM @Entities;
+    
+    -- Insert Origins:
+    INSERT INTO [Edges].[Origin]
+    SELECT flight.NodeID, airport.$NODE_ID, flight.TaxiOut, flight.DepartureDelay
+    FROM @TemporaryFlightTable flight
+        INNER JOIN [Nodes].Airport airport on airport.Identifier = flight.OriginAirport;
+
+    -- Insert Destinations:
+    INSERT INTO [Edges].[Destination]
+	SELECT flight.NodeID, airport.$NODE_ID, flight.TaxiIn, flight.ArrivalDelay
+    FROM @TemporaryFlightTable flight
+    INNER JOIN [Nodes].Airport airport on airport.Identifier = flight.DestinationAirport;
+
+    -- INSERT Delays:
+    INSERT INTO [Edges].[DelayedBy]
+    SELECT flight.NodeID, (SELECT $NODE_ID FROM [Nodes].Reason where Code = 'A'), flight.CarrierDelay
+    FROM @TemporaryFlightTable flight
+    WHERE flight.CarrierDelay > 0;
+
+    INSERT INTO [Edges].[DelayedBy]
+    SELECT flight.NodeID, (SELECT $NODE_ID FROM [Nodes].Reason where Code = 'B'), flight.WeatherDelay
+    FROM @TemporaryFlightTable flight
+    WHERE flight.WeatherDelay > 0;
+
+    INSERT INTO [Edges].[DelayedBy]
+    SELECT flight.NodeID, (SELECT $NODE_ID FROM [Nodes].Reason where Code = 'C'), flight.NasDelay
+    FROM @TemporaryFlightTable flight
+    WHERE flight.NasDelay > 0;
+
+    INSERT INTO [Edges].[DelayedBy]
+    SELECT flight.NodeID, (SELECT $NODE_ID FROM [Nodes].Reason where Code = 'D'), flight.SecurityDelay
+    FROM @TemporaryFlightTable flight
+    WHERE flight.SecurityDelay > 0;
+
+    INSERT INTO [Edges].[DelayedBy]
+    SELECT flight.NodeID, (SELECT $NODE_ID FROM [Nodes].Reason where Code = 'Z'), flight.LateAircraftDelay
+    FROM @TemporaryFlightTable flight
+    WHERE flight.LateAircraftDelay > 0;
+    
+    -- Insert Cancelled Flights:
+    INSERT INTO [Edges].[CancelledBy]
+    SELECT flight.NodeID, reason.$NODE_ID
+    FROM @TemporaryFlightTable flight
+        INNER JOIN [Nodes].Reason reason on flight.CancellationCode = reason.Code;
+    
+END
+GO
+
+IF OBJECT_ID(N'[Function].[InsertCarriers]', N'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE [Function].[InsertCarriers]
+END
+GO 
+
+IF EXISTS (SELECT * FROM sys.types WHERE is_table_type = 1 AND name = 'CarrierType')
+BEGIN
+    DROP TYPE [Function].[CarrierType]
+END
+
+CREATE TYPE [Function].[CarrierType] AS TABLE (
+	Code [NVARCHAR](255),
+	Description [NVARCHAR](255)
+);
+
+GO
+
+CREATE PROCEDURE [Function].[InsertCarriers]
+  @Entities [CarrierType] ReadOnly
+AS
+BEGIN
+    
+    SET NOCOUNT ON;
+
+    -- Insert missing City Nodes:
+    INSERT INTO [Nodes].[Carrier](Code, Description)
+    SELECT e.Code, e.Description
+    FROM @Entities e 
+	WHERE NOT EXISTS (select * from [Nodes].[Carrier] c where c.Code = e.Code)
+
+END
+GO
+
+
+-- Data:
+INSERT INTO [Nodes].[Reason](Code, Description)
+SELECT 'A', 'Carrier'
+WHERE NOT EXISTS (select * from [Nodes].[Reason] where Code = 'A')
+
+INSERT INTO [Nodes].[Reason](Code, Description)
+SELECT 'B', 'Weather'
+WHERE NOT EXISTS (select * from [Nodes].[Reason] where Code = 'B')
+
+INSERT INTO [Nodes].[Reason](Code, Description)
+SELECT 'C', 'National Air System'
+WHERE NOT EXISTS (select * from [Nodes].[Reason] where Code = 'C')
+
+INSERT INTO [Nodes].[Reason](Code, Description)
+SELECT 'D', 'Security'
+WHERE NOT EXISTS (select * from [Nodes].[Reason] where Code = 'D')
+
+INSERT INTO [Nodes].[Reason](Code, Description)
+SELECT 'Z', 'Late Aircraft'
+WHERE NOT EXISTS (select * from [Nodes].[Reason] where Code = 'Z')
